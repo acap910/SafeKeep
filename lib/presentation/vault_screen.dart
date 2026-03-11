@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:local_auth/local_auth.dart'; // Panggil biometrik
+import 'package:local_auth/local_auth.dart'; 
 import '../business/aes_engine.dart';
 
 class VaultScreen extends StatefulWidget {
@@ -32,11 +32,9 @@ class _VaultScreenState extends State<VaultScreen> {
     });
   }
 
-  // FUNGSI BARU: Buka dan Decrypt Gambar
   Future<void> _viewEncryptedImage(FileSystemEntity file) async {
     final LocalAuthentication auth = LocalAuthentication();
     try {
-      // 1. Minta cap jari sebelum benarkan file decrypt
       final bool didAuthenticate = await auth.authenticate(
         localizedReason: 'Sila sahkan identiti untuk melihat fail rahsia',
       );
@@ -48,27 +46,24 @@ class _VaultScreenState extends State<VaultScreen> {
           );
         }
 
-        // 2. Baca data mangga (encrypted)
         File encryptedFile = File(file.path);
         Uint8List encryptedBytes = await encryptedFile.readAsBytes();
 
-        // 3. Buka mangga (Decrypt) guna enjin AES
         Uint8List decryptedBytes = await _aesEngine.decryptFile(encryptedBytes);
 
-        // 4. Paparkan gambar secara Pop-up (Volatile Memory)
         if (mounted) {
           showDialog(
             context: context,
             builder: (BuildContext context) {
               return Dialog(
-                backgroundColor: Colors.transparent, // Belakang kosong
+                backgroundColor: Colors.transparent, 
                 child: Stack(
                   alignment: Alignment.topRight,
                   children: [
-                    Image.memory(decryptedBytes), // Papar gambar dari memori (tak save ke phone)
+                    Image.memory(decryptedBytes), 
                     IconButton(
                       icon: const Icon(Icons.close, color: Colors.white, size: 30),
-                      onPressed: () => Navigator.of(context).pop(), // Tutup gambar
+                      onPressed: () => Navigator.of(context).pop(),
                     ),
                   ],
                 ),
@@ -100,7 +95,6 @@ class _VaultScreenState extends State<VaultScreen> {
         File originalFile = File(image.path);
         Uint8List fileBytes = await originalFile.readAsBytes();
 
-        // Guna enjin AES yang baru dikemas kini
         Uint8List encryptedBytes = await _aesEngine.encryptFile(fileBytes);
 
         Directory appDocDir = await getApplicationDocumentsDirectory();
@@ -109,7 +103,7 @@ class _VaultScreenState extends State<VaultScreen> {
         File encryptedFile = File(safePath);
         await encryptedFile.writeAsBytes(encryptedBytes);
 
-        await _loadEncryptedFiles(); // Refresh senarai
+        await _loadEncryptedFiles();
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -123,6 +117,25 @@ class _VaultScreenState extends State<VaultScreen> {
           SnackBar(content: Text('Ralat: $e'), backgroundColor: Colors.red),
         );
       }
+    }
+  }
+
+  // FUNGSI BARU: Padam fail dari storage
+  Future<void> _deleteEncryptedFile(FileSystemEntity file, String fileName) async {
+    try {
+      await file.delete(); // Padam fail fizikal dari telefon
+      await _loadEncryptedFiles(); // Refresh UI
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$fileName telah dipadam.'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("Gagal memadam fail: $e");
     }
   }
 
@@ -149,14 +162,28 @@ class _VaultScreenState extends State<VaultScreen> {
                 final file = _encryptedFiles[index];
                 final fileName = file.path.split('/').last;
 
-                return Card(
-                  elevation: 2,
-                  child: ListTile(
-                    leading: const Icon(Icons.lock, color: Colors.amber, size: 40),
-                    title: Text(fileName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: const Text('AES-256 Encrypted'),
-                    trailing: const Icon(Icons.remove_red_eye, color: Colors.blue),
-                    onTap: () => _viewEncryptedImage(file), // Buka fungsi Pop-up bila ditekan!
+                // WIDGET BARU: Membolehkan kita swipe ke kiri untuk padam
+                return Dismissible(
+                  key: Key(file.path), // Kunci unik untuk setiap item
+                  direction: DismissDirection.endToStart, // Swipe dari kanan ke kiri sahaja
+                  background: Container(
+                    color: Colors.red,
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: const Icon(Icons.delete, color: Colors.white, size: 30),
+                  ),
+                  onDismissed: (direction) {
+                    _deleteEncryptedFile(file, fileName); // Panggil fungsi padam bila habis swipe
+                  },
+                  child: Card(
+                    elevation: 2,
+                    child: ListTile(
+                      leading: const Icon(Icons.lock, color: Colors.amber, size: 40),
+                      title: Text(fileName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: const Text('AES-256 Encrypted'),
+                      trailing: const Icon(Icons.remove_red_eye, color: Colors.blue),
+                      onTap: () => _viewEncryptedImage(file),
+                    ),
                   ),
                 );
               },
