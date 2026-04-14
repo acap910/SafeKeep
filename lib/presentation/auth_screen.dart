@@ -1,25 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
-import 'vault_screen.dart'; // Memanggil fail skrin Vault yang kita buat tadi
+import 'vault_screen.dart';
 
 class AuthScreen extends StatelessWidget {
   const AuthScreen({super.key});
 
-  // Fungsi untuk panggil pop-up cap jari
   Future<void> _authenticate(BuildContext context) async {
     final LocalAuthentication auth = LocalAuthentication();
     
     try {
-      // Panggil fungsi biometrik (Cap jari/Face ID/PIN)
       final bool didAuthenticate = await auth.authenticate(
-        localizedReason: 'Sila sahkan identiti untuk masuk ke SafeKeep',
+        // Tukar ayat biometrik ke Bahasa Inggeris
+        localizedReason: 'Please authenticate to access SafeKeep',
       );
 
-      // Kalau cap jari SAH dan berjaya
       if (didAuthenticate) {
-        debugPrint("Fuhh berjaya masuk! Cap jari sah.");
-        
-        // Pastikan context masih ada sebelum melompat ke skrin lain
+        debugPrint("Authentication successful!");
         if (context.mounted) {
           Navigator.pushReplacement(
             context,
@@ -27,54 +23,30 @@ class AuthScreen extends StatelessWidget {
           );
         }
       } else {
-        // Kalau batal atau cap jari salah
-        debugPrint("Gagal! Sila cuba lagi.");
+        debugPrint("Authentication failed or canceled.");
       }
     } catch (e) {
-      debugPrint("Ada error biometrik: $e");
+      debugPrint("Biometric error: $e");
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blue[800], // Latar belakang biru gelap
+      backgroundColor: Colors.blue[800],
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Ikon Shield (Perisai)
-            const Icon(
-              Icons.security,
-              size: 100,
-              color: Colors.white,
-            ),
+            const Icon(Icons.security, size: 100, color: Colors.white),
             const SizedBox(height: 20),
-            
-            // Tajuk SafeKeep
-            const Text(
-              'SafeKeep',
-              style: TextStyle(
-                fontSize: 36,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
+            const Text('SafeKeep', style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white)),
             const SizedBox(height: 10),
+            const Text('AES-256 Secure Vault', style: TextStyle(fontSize: 16, color: Colors.white70)),
+            const SizedBox(height: 80),
             
-            // Subtajuk AES-256
-            const Text(
-              'AES-256 Secure Vault',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.white70,
-              ),
-            ),
-            const SizedBox(height: 80), // Jarak ke butang cap jari
-            
-            // Butang Biometrik (Cap Jari)
             GestureDetector(
-              onTap: () => _authenticate(context), // Panggil fungsi biometrik bila ditekan
+              onTap: () => _authenticate(context),
               child: Column(
                 children: [
                   Container(
@@ -83,34 +55,15 @@ class AuthScreen extends StatelessWidget {
                       shape: BoxShape.circle,
                       color: Colors.white.withValues(alpha: 0.1),
                     ),
-                    child: const Icon(
-                      Icons.fingerprint,
-                      size: 60,
-                      color: Colors.amber, // Warna ikon kuning
-                    ),
+                    child: const Icon(Icons.fingerprint, size: 60, color: Colors.amber),
                   ),
                   const SizedBox(height: 15),
-                  const Text(
-                    'Touch to Authenticate',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                    ),
-                  ),
+                  const Text('Touch to Authenticate', style: TextStyle(color: Colors.white, fontSize: 16)),
                 ],
               ),
             ),
-            
             const SizedBox(height: 40),
-            
-            // Teks bawah
-            const Text(
-              'Hardware-Backed Keystore',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.white54,
-              ),
-            ),
+            const Text('Hardware-Backed Keystore', style: TextStyle(fontSize: 12, color: Colors.white54)),
           ],
         ),
       ),
