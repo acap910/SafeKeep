@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart'; // Panggil pakej animation
 import 'vault_screen.dart';
 
 class AuthScreen extends StatelessWidget {
@@ -9,9 +10,10 @@ class AuthScreen extends StatelessWidget {
     final LocalAuthentication auth = LocalAuthentication();
     
     try {
+      // Format versi lama yang stabil (biometricOnly terus di sini)
       final bool didAuthenticate = await auth.authenticate(
-        // Tukar ayat biometrik ke Bahasa Inggeris
         localizedReason: 'Please authenticate to access SafeKeep',
+        biometricOnly: true, 
       );
 
       if (didAuthenticate) {
@@ -49,14 +51,32 @@ class AuthScreen extends StatelessWidget {
               onTap: () => _authenticate(context),
               child: Column(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: 0.1),
+                  // --- BAHAGIAN ANIMATION GEMPAK BERMULA DI SINI ---
+                  SizedBox(
+                    height: 150, 
+                    width: 150,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // 1. Gelombang radar berdegup kat belakang (SpinKitPulse)
+                        const SpinKitPulse(
+                          color: Colors.amber,
+                          size: 150.0,
+                        ),
+                        // 2. Butang cap jari kekal kat tengah
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.blue[900], // Warna gelap sikit untuk nampak timbul
+                          ),
+                          child: const Icon(Icons.fingerprint, size: 60, color: Colors.amber),
+                        ),
+                      ],
                     ),
-                    child: const Icon(Icons.fingerprint, size: 60, color: Colors.amber),
                   ),
+                  // --- BAHAGIAN ANIMATION TAMAT ---
+                  
                   const SizedBox(height: 15),
                   const Text('Touch to Authenticate', style: TextStyle(color: Colors.white, fontSize: 16)),
                 ],
