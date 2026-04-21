@@ -22,6 +22,10 @@ class _VaultScreenState extends State<VaultScreen> {
   int _failedAttempts = 0; 
   int _currentIndex = 0;
 
+  // Toggle state untuk UI Settings
+  bool _biometricEnabled = true;
+  bool _autoLockEnabled = true;
+
   @override
   void initState() {
     super.initState();
@@ -37,7 +41,7 @@ class _VaultScreenState extends State<VaultScreen> {
   }
 
   // =========================================================
-  // FUNGSI UI & LOGIK SEDIA ADA (Dikekalkan 100%)
+  // FUNGSI UI & LOGIK SEDIA ADA 
   // =========================================================
   void _showPremiumToast(String message, IconData icon, Color bgColor) {
     if (!mounted) return;
@@ -262,6 +266,8 @@ class _VaultScreenState extends State<VaultScreen> {
   // =========================================================
   // FUNGSI WIDGET TAB VIEWS
   // =========================================================
+  
+  // 1. Skrin Galeri Gambar
   Widget _buildImageGallery() {
     return _encryptedFiles.isEmpty
         ? Center(
@@ -343,6 +349,7 @@ class _VaultScreenState extends State<VaultScreen> {
           );
   }
 
+  // 2. Skrin Coming Soon (Untuk Video & PDF)
   Widget _buildComingSoon(String title, IconData icon) {
     return Center(
       child: Column(
@@ -365,6 +372,98 @@ class _VaultScreenState extends State<VaultScreen> {
     );
   }
 
+  // 3. SKRIN SETTINGS BARU YANG LENGKAP!
+  Widget _buildSettingsScreen() {
+    return ListView(
+      padding: const EdgeInsets.only(top: 20, left: 15, right: 15, bottom: 80),
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(left: 10, bottom: 10),
+          child: Text("SECURITY", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 12)),
+        ),
+        Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          child: Column(
+            children: [
+              SwitchListTile(
+                activeColor: const Color(0xFF4A00E0),
+                secondary: const Icon(Icons.fingerprint, color: Colors.blue),
+                title: const Text("Biometric Authentication", style: TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text("Require fingerprint to unlock files"),
+                value: _biometricEnabled,
+                onChanged: (bool value) {
+                  setState(() { _biometricEnabled = value; });
+                },
+              ),
+              const Divider(height: 1),
+              SwitchListTile(
+                activeColor: const Color(0xFF4A00E0),
+                secondary: const Icon(Icons.timer_outlined, color: Colors.orange),
+                title: const Text("Auto-Lock Vault", style: TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text("Lock app immediately when minimized"),
+                value: _autoLockEnabled,
+                onChanged: (bool value) {
+                  setState(() { _autoLockEnabled = value; });
+                },
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.pin_outlined, color: Colors.green),
+                title: const Text("Change Master PIN", style: TextStyle(fontWeight: FontWeight.bold)),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () {
+                  _showPremiumToast("This feature will be available in the next update.", Icons.info_outline, Colors.blue);
+                },
+              ),
+            ],
+          ),
+        ),
+        
+        const SizedBox(height: 25),
+        const Padding(
+          padding: EdgeInsets.only(left: 10, bottom: 10),
+          child: Text("DATA & STORAGE", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 12)),
+        ),
+        Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          child: ListTile(
+            leading: const Icon(Icons.cleaning_services_rounded, color: Colors.redAccent),
+            title: const Text("Clear Cache", style: TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: const Text("Free up temporary memory space"),
+            onTap: () {
+              _showPremiumToast("App cache cleared successfully.", Icons.check_circle_outline, Colors.green);
+            },
+          ),
+        ),
+
+        const SizedBox(height: 25),
+        const Padding(
+          padding: EdgeInsets.only(left: 10, bottom: 10),
+          child: Text("ABOUT SAFE-KEEP", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 12)),
+        ),
+        Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          child: Column(
+            children: [
+              const ListTile(
+                leading: Icon(Icons.info_outline, color: Colors.blueGrey),
+                title: Text("Version", style: TextStyle(fontWeight: FontWeight.bold)),
+                trailing: Text("1.0.0+1", style: TextStyle(color: Colors.grey)),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.school, color: Color(0xFF4A00E0)),
+                title: const Text("Developer", style: TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text("Asyraf Muqri Bin Saberi\nUniversiti Teknologi MARA (UiTM)"),
+                isThreeLine: true,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   // =========================================================
   // BINAAN UTAMA UI (SCAFFOLD)
   // =========================================================
@@ -373,14 +472,13 @@ class _VaultScreenState extends State<VaultScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       
-      // HEADER BARU: Gradient Premium (Versi Security Dashboard Tanpa Nama)
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(110.0), // Tinggi sikit untuk dashboard look
+        preferredSize: const Size.fromHeight(110.0), 
         child: Container(
           padding: const EdgeInsets.only(top: 50, left: 20, right: 20, bottom: 10),
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFF4A00E0), Color(0xFF8E2DE2)], // Deep Purple ke Magenta
+              colors: [Color(0xFF4A00E0), Color(0xFF8E2DE2)], 
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -392,7 +490,6 @@ class _VaultScreenState extends State<VaultScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Kiri: Ikon Perisai & Teks Log
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -413,11 +510,10 @@ class _VaultScreenState extends State<VaultScreen> {
                   ),
                 ],
               ),
-              // Kanan: Status Animation
               Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SpinKitPulse( // Guna animation sedia ada
+                  const SpinKitPulse( 
                     color: Colors.greenAccent,
                     size: 30.0,
                   ),
@@ -430,10 +526,11 @@ class _VaultScreenState extends State<VaultScreen> {
         ),
       ),
 
+      // UPDATE DI SINI: Tab ke-3 sekarang panggil _buildSettingsScreen()
       body: _currentIndex == 0 ? _buildImageGallery() :
             _currentIndex == 1 ? _buildComingSoon("Video Vault", Icons.video_library) :
             _currentIndex == 2 ? _buildComingSoon("PDF Vault", Icons.picture_as_pdf) :
-            _buildComingSoon("Settings", Icons.settings),
+            _buildSettingsScreen(),
 
       floatingActionButton: FloatingActionButton(
         onPressed: _pickAndEncryptImage,
