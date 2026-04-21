@@ -386,7 +386,7 @@ class _VaultScreenState extends State<VaultScreen> {
           child: Column(
             children: [
               SwitchListTile(
-                activeColor: const Color(0xFF4A00E0),
+                activeThumbColor: const Color(0xFF4A00E0),
                 secondary: const Icon(Icons.fingerprint, color: Colors.blue),
                 title: const Text("Biometric Authentication", style: TextStyle(fontWeight: FontWeight.bold)),
                 subtitle: const Text("Require fingerprint to unlock files"),
@@ -397,7 +397,7 @@ class _VaultScreenState extends State<VaultScreen> {
               ),
               const Divider(height: 1),
               SwitchListTile(
-                activeColor: const Color(0xFF4A00E0),
+                activeThumbColor: const Color(0xFF4A00E0),
                 secondary: const Icon(Icons.timer_outlined, color: Colors.orange),
                 title: const Text("Auto-Lock Vault", style: TextStyle(fontWeight: FontWeight.bold)),
                 subtitle: const Text("Lock app immediately when minimized"),

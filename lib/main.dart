@@ -1,5 +1,5 @@
+import 'presentation/splash_screen.dart'; // Ubah ikut laluan folder Acap
 import 'package:flutter/material.dart';
-import 'presentation/auth_screen.dart'; // Kita panggil fail skrin log masuk tadi
 
 void main() {
   runApp(const SafeKeepApp());
@@ -16,8 +16,8 @@ class SafeKeepApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      // Tukar home kepada AuthScreen()
-      home: const AuthScreen(),
+      // Tukar home kepada()
+      home: const SplashScreen(),
     );
   }
 }
