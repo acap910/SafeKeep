@@ -5,7 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class AesEngine {
   final secureStorage = const FlutterSecureStorage();
 
-  // 1. Cipta Kunci Utama (Master Key) dalam Keystore
+  // 1. make main key (keystore)
   Future<enc.Key> getOrCreateKey() async {
     // Check kalau kunci dah wujud dalam cip selamat telefon
     String? storedKey = await secureStorage.read(key: 'master_key');

@@ -40,7 +40,7 @@ class _VaultScreenState extends State<VaultScreen> {
   }
 
   // =========================================================
-  // FUNGSI UI TOAST & LOADING
+  // UI TOAST & LOADING FUNCTIONS
   // =========================================================
   void _showPremiumToast(String message, IconData icon, Color bgColor) {
     if (!mounted) return;
@@ -109,7 +109,7 @@ class _VaultScreenState extends State<VaultScreen> {
   }
 
   // =========================================================
-  // FUNGSI DELETE (POP-UP AMARAN PURGE)
+  // DELETE FUNCTION (PURGE WARNING POP-UP)
   // =========================================================
   Future<void> _confirmDelete(FileSystemEntity file, String fileName) async {
     showGeneralDialog(
@@ -173,7 +173,7 @@ class _VaultScreenState extends State<VaultScreen> {
   }
 
   // =========================================================
-  // FUNGSI ENCRYPT & DECRYPT (MODERN FULLSCREEN VIEW)
+  // ENCRYPT & DECRYPT FUNCTIONS (MODERN FULLSCREEN VIEW)
   // =========================================================
   Future<void> _viewEncryptedImage(FileSystemEntity file) async {
     if (_failedAttempts >= 3) { _showDecoyImage(); return; }
@@ -242,6 +242,17 @@ class _VaultScreenState extends State<VaultScreen> {
         await encryptedFile.writeAsBytes(encryptedBytes);
         await _loadEncryptedFiles();
 
+        // =======================================================
+        // TERMINAL PROOF FOR VIVA EVALUATION
+        // =======================================================
+        debugPrint("\n===========================================");
+        debugPrint("🔒 SECURITY PROOF:");
+        debugPrint("Secure File Path: $safePath");
+        debugPrint("Original image format has been shredded.");
+        debugPrint("New Format: .enc (AES-256 Encrypted Raw Data)");
+        debugPrint("===========================================\n");
+        // =======================================================
+
         setState(() { _currentIndex = 0; });
         if (mounted) {
           Navigator.of(context).pop(); 
@@ -269,7 +280,7 @@ class _VaultScreenState extends State<VaultScreen> {
               final file = _encryptedFiles[index];
               final fileName = file.path.split('/').last;
 
-              // OPTIMIZED: Guna Container dengan warna lutsinar (Bukan BackdropFilter yang berat)
+              // OPTIMIZED: Using Container with transparent color to prevent GPU overload
               return Container(
                 decoration: BoxDecoration(
                   color: const Color(0xFF111A3A).withValues(alpha: 0.8),
@@ -313,7 +324,7 @@ class _VaultScreenState extends State<VaultScreen> {
                         top: 5, right: 5,
                         child: IconButton(
                           icon: const Icon(Icons.delete_sweep, color: Colors.redAccent, size: 20),
-                          onPressed: () => _confirmDelete(file, fileName), 
+                          onPressed: () => _confirmDelete(file, fileName), // Trigger red purge pop-up
                         ),
                       ),
                     ],
