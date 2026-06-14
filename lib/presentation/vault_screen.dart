@@ -24,6 +24,7 @@ class _VaultScreenState extends State<VaultScreen> {
 
   bool _biometricEnabled = true;
   bool _autoLockEnabled = true;
+  String _selectedAesMode = 'GCM'; 
 
   @override
   void initState() {
@@ -173,15 +174,25 @@ class _VaultScreenState extends State<VaultScreen> {
   }
 
   // =========================================================
-  // ENCRYPT & DECRYPT FUNCTIONS (MODERN FULLSCREEN VIEW)
+  // ENCRYPT & DECRYPT FUNCTIONS (AUTO MODE DETECTION)
   // =========================================================
   Future<void> _viewEncryptedImage(FileSystemEntity file) async {
     if (_failedAttempts >= 3) { _showDecoyImage(); return; }
     
+    // Auto-detect mod dari nama fail sebelum decrypt
+    String fileName = file.path.split('/').last;
+    String fileMode = 'GCM'; // Default fallback untuk fail lama
+    if (fileName.contains('_CBC_')) fileMode = 'CBC';
+    else if (fileName.contains('_CTR_')) fileMode = 'CTR';
+    else if (fileName.contains('_GCM_')) fileMode = 'GCM';
+    
+    // Arahkan enjin AES untuk guna mod yang betul mengikut fail
+    _aesEngine.setMode(fileMode);
+
     final LocalAuthentication auth = LocalAuthentication();
     try {
       final bool didAuthenticate = await auth.authenticate(
-        localizedReason: 'Identity verification required',
+        localizedReason: 'Identity verification required to unlock $fileMode module',
         biometricOnly: true, 
       );
 
@@ -205,7 +216,7 @@ class _VaultScreenState extends State<VaultScreen> {
                 appBar: AppBar(
                   backgroundColor: Colors.transparent,
                   iconTheme: const IconThemeData(color: Colors.white),
-                  title: const Text("DECRYPTED VIEW", style: TextStyle(color: Colors.cyanAccent, fontSize: 12, fontWeight: FontWeight.bold)),
+                  title: Text("DECRYPTED VIEW ($fileMode)", style: const TextStyle(color: Colors.cyanAccent, fontSize: 12, fontWeight: FontWeight.bold)),
                 ),
                 body: Center(
                   child: InteractiveViewer(child: Image.memory(decryptedBytes)),
@@ -220,7 +231,11 @@ class _VaultScreenState extends State<VaultScreen> {
         if (_failedAttempts >= 3) { _showDecoyImage(); }
       }
     } catch (e) {
-      _showPremiumToast('ERROR', Icons.error, Colors.red);
+      if (mounted) Navigator.of(context).pop();
+      _showPremiumToast('DECRYPTION FAILED. CORRUPTED DATA.', Icons.error, Colors.red);
+    } finally {
+      // Kembalikan enjin kepada mod yang dipilih di Settings selepas selesai
+      _aesEngine.setMode(_selectedAesMode);
     }
   }
 
@@ -236,27 +251,24 @@ class _VaultScreenState extends State<VaultScreen> {
         var encryptedBytes = await _aesEngine.encryptFile(fileBytes);
 
         Directory appDocDir = await getApplicationDocumentsDirectory();
-        String safePath = '${appDocDir.path}/SECURE_MOD_${DateTime.now().millisecondsSinceEpoch}.enc';
+        
+        // Simpan mod enkripsi dalam nama fail!
+        String safePath = '${appDocDir.path}/SECURE_MOD_${_selectedAesMode}_${DateTime.now().millisecondsSinceEpoch}.enc';
 
         File encryptedFile = File(safePath);
         await encryptedFile.writeAsBytes(encryptedBytes);
         await _loadEncryptedFiles();
 
-        // =======================================================
-        // TERMINAL PROOF FOR VIVA EVALUATION
-        // =======================================================
         debugPrint("\n===========================================");
-        debugPrint("🔒 SECURITY PROOF:");
+        debugPrint("🔒 SECURITY PROOF (FOR EXAMINER):");
         debugPrint("Secure File Path: $safePath");
-        debugPrint("Original image format has been shredded.");
-        debugPrint("New Format: .enc (AES-256 Encrypted Raw Data)");
+        debugPrint("Mode Used: AES-$_selectedAesMode");
         debugPrint("===========================================\n");
-        // =======================================================
 
         setState(() { _currentIndex = 0; });
         if (mounted) {
           Navigator.of(context).pop(); 
-          _showPremiumToast('MODULE SECURED', Icons.verified, Colors.cyan.shade700);
+          _showPremiumToast('MODULE SECURED (AES-$_selectedAesMode)', Icons.verified, Colors.cyan.shade700);
         }
       }
     } catch (e) {
@@ -265,7 +277,7 @@ class _VaultScreenState extends State<VaultScreen> {
   }
 
   // =========================================================
-  // TAB BUILDERS (OPTIMIZED PERFORMANCE)
+  // TAB BUILDERS
   // =========================================================
   Widget _buildImageGallery() {
     return _encryptedFiles.isEmpty
@@ -280,7 +292,12 @@ class _VaultScreenState extends State<VaultScreen> {
               final file = _encryptedFiles[index];
               final fileName = file.path.split('/').last;
 
-              // OPTIMIZED: Using Container with transparent color to prevent GPU overload
+              // Kesan nama mod dari nama fail (Bukan dari dropdown settings)
+              String displayMode = '256'; // Default untuk fail lama
+              if (fileName.contains('_CBC_')) displayMode = 'CBC';
+              else if (fileName.contains('_CTR_')) displayMode = 'CTR';
+              else if (fileName.contains('_GCM_')) displayMode = 'GCM';
+
               return Container(
                 decoration: BoxDecoration(
                   color: const Color(0xFF111A3A).withValues(alpha: 0.8),
@@ -316,7 +333,7 @@ class _VaultScreenState extends State<VaultScreen> {
                               ),
                             ),
                             const SizedBox(height: 5),
-                            const Text("AES-256", style: TextStyle(color: Colors.cyanAccent, fontSize: 8, fontWeight: FontWeight.bold)),
+                            Text("AES-$displayMode", style: const TextStyle(color: Colors.cyanAccent, fontSize: 8, fontWeight: FontWeight.bold)),
                           ],
                         ),
                       ),
@@ -324,7 +341,7 @@ class _VaultScreenState extends State<VaultScreen> {
                         top: 5, right: 5,
                         child: IconButton(
                           icon: const Icon(Icons.delete_sweep, color: Colors.redAccent, size: 20),
-                          onPressed: () => _confirmDelete(file, fileName), // Trigger red purge pop-up
+                          onPressed: () => _confirmDelete(file, fileName), 
                         ),
                       ),
                     ],
@@ -362,11 +379,43 @@ class _VaultScreenState extends State<VaultScreen> {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
+        _buildSettingCard("CRYPTOGRAPHY ENGINE", [
+          ListTile(
+            leading: const Icon(Icons.memory, color: Colors.cyanAccent),
+            title: const Text("AES Algorithm Mode", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            subtitle: const Text("Select active cipher mode for encryption", style: TextStyle(color: Colors.white54, fontSize: 10)),
+            trailing: DropdownButton<String>(
+              value: _selectedAesMode,
+              dropdownColor: const Color(0xFF111A3A), 
+              style: const TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold, fontSize: 14),
+              underline: Container(height: 2, color: Colors.cyanAccent),
+              icon: const Icon(Icons.arrow_drop_down, color: Colors.cyanAccent),
+              items: ['GCM', 'CBC', 'CTR'].map((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text("AES-$value"),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                if (newValue != null) {
+                  setState(() {
+                    _selectedAesMode = newValue;
+                    _aesEngine.setMode(newValue); 
+                  });
+                  _showPremiumToast('ENGINE SWITCHED TO AES-$newValue', Icons.check_circle_outline, Colors.green);
+                }
+              },
+            ),
+          ),
+        ]),
+        const SizedBox(height: 20),
+
         _buildSettingCard("SECURITY PROTOCOLS", [
           _buildSwitch("Biometric Lock", _biometricEnabled, (v) => setState(() => _biometricEnabled = v)),
           _buildSwitch("Auto-Lock System", _autoLockEnabled, (v) => setState(() => _autoLockEnabled = v)),
         ]),
         const SizedBox(height: 20),
+
         _buildSettingCard("DEVELOPER CREDENTIALS", [
           const ListTile(
             title: Text("ASYRAF MUQRI BIN SABERI", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),

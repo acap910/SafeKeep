@@ -1,51 +1,64 @@
 import 'dart:typed_data';
-import 'package:encrypt/encrypt.dart' as enc;
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:encrypt/encrypt.dart' as encrypt;
+import 'package:flutter/foundation.dart';
 
 class AesEngine {
-  final secureStorage = const FlutterSecureStorage();
+  // Kunci Rahsia 256-bit (Wajib 32 aksara)
+  final _key = encrypt.Key.fromUtf8('SafeKeepSuperSecretKey1234567890');
+  // Initialization Vector (IV) - 16 aksara
+  final _iv = encrypt.IV.fromUtf8('SafeKeepInitVec1');
 
-  // 1. make main key (keystore)
-  Future<enc.Key> getOrCreateKey() async {
-    // Check kalau kunci dah wujud dalam cip selamat telefon
-    String? storedKey = await secureStorage.read(key: 'master_key');
-    
-    if (storedKey != null) {
-      return enc.Key.fromBase64(storedKey); // Guna kunci yang sedia ada
-    } else {
-      final newKey = enc.Key.fromSecureRandom(32); // Cipta kunci 256-bit baru
-      await secureStorage.write(key: 'master_key', value: newKey.base64); // Simpan terus
-      return newKey;
-    }
+  // Mod Asal (Default)
+  encrypt.AESMode currentMode = encrypt.AESMode.gcm;
+
+  // Fungsi untuk tukar mod dari Skrin Settings
+  void setMode(String modeName) {
+    if (modeName == 'CBC') currentMode = encrypt.AESMode.cbc;
+    else if (modeName == 'GCM') currentMode = encrypt.AESMode.gcm;
+    else if (modeName == 'CTR') currentMode = encrypt.AESMode.ctr;
   }
 
-  // 2. Fungsi ENCRYPT fail gambar
-  Future<Uint8List> encryptFile(Uint8List fileBytes) async {
-    final key = await getOrCreateKey();
-    final iv = enc.IV.fromSecureRandom(16); // IV wajib rawak untuk setiap fail
-    
-    final encrypter = enc.Encrypter(enc.AES(key, mode: enc.AESMode.cbc));
-    final encrypted = encrypter.encryptBytes(fileBytes, iv: iv);
+  Future<Uint8List> encryptFile(Uint8List data) async {
+    final encrypter = encrypt.Encrypter(encrypt.AES(_key, mode: currentMode));
 
-    // Gabungkan IV (16 bytes) dengan Data Sulit supaya kita boleh guna IV ni untuk Decrypt nanti
-    final result = BytesBuilder();
-    result.add(iv.bytes);
-    result.add(encrypted.bytes);
-    return result.toBytes();
+    // Mula Stopwatch ⏱️
+    final stopwatch = Stopwatch()..start();
+
+    final encrypted = encrypter.encryptBytes(data, iv: _iv);
+
+    // Henti Stopwatch 🛑
+    stopwatch.stop();
+
+    // Cetak keputusan di Terminal VS Code
+    debugPrint("\n====================================");
+    debugPrint("📊 [EKSPERIMEN FYP - ENCRYPTION]");
+    debugPrint("Mod AES     : ${currentMode.toString().split('.').last.toUpperCase()}");
+    debugPrint("Saiz Fail   : ${(data.length / (1024 * 1024)).toStringAsFixed(2)} MB");
+    debugPrint("Masa Diambil: ${stopwatch.elapsedMilliseconds} ms");
+    debugPrint("====================================\n");
+
+    return Uint8List.fromList(encrypted.bytes);
   }
 
-  // 3. Fungsi DECRYPT fail gambar
-  Future<Uint8List> decryptFile(Uint8List encryptedDataWithIv) async {
-    final key = await getOrCreateKey();
+  Future<Uint8List> decryptFile(Uint8List encryptedData) async {
+    final encrypter = encrypt.Encrypter(encrypt.AES(_key, mode: currentMode));
+    final encrypted = encrypt.Encrypted(encryptedData);
 
-    // Asingkan 16 bytes pertama sebagai IV, dan bakinya sebagai Data Sulit
-    final iv = enc.IV(encryptedDataWithIv.sublist(0, 16));
-    final encryptedBytes = encryptedDataWithIv.sublist(16);
+    // Mula Stopwatch ⏱️
+    final stopwatch = Stopwatch()..start();
 
-    final encrypter = enc.Encrypter(enc.AES(key, mode: enc.AESMode.cbc));
-    final encryptedData = enc.Encrypted(encryptedBytes);
+    final decrypted = encrypter.decryptBytes(encrypted, iv: _iv);
 
-    final decrypted = encrypter.decryptBytes(encryptedData, iv: iv);
-    return Uint8List.fromList(decrypted); // Pulangkan data gambar asal
+    // Henti Stopwatch 🛑
+    stopwatch.stop();
+
+    // Cetak keputusan di Terminal VS Code
+    debugPrint("\n====================================");
+    debugPrint("📊 [EKSPERIMEN FYP - DECRYPTION]");
+    debugPrint("Mod AES     : ${currentMode.toString().split('.').last.toUpperCase()}");
+    debugPrint("Masa Diambil: ${stopwatch.elapsedMilliseconds} ms");
+    debugPrint("====================================\n");
+
+    return Uint8List.fromList(decrypted);
   }
 }
